@@ -35,17 +35,22 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String MIME_TEXT_PLAIN = "text/plain";
 
-    boolean isWrite = false;
+    int status = 0;
 
     NfcAdapter mNfcAdapter;
 
     EditText edMessage;
+    EditText edPwd;
+
     TextView tvResult;
     TextView tvWait;
+
     LinearLayout lyWait;
 
-    private Button btnRead;
-    private Button btnWrite;
+    Button btnRead;
+    Button btnWrite;
+    Button btnSetPwd;
+    Button btnDelPwd;
 
 
     @Override
@@ -56,16 +61,19 @@ public class MainActivity extends AppCompatActivity {
         mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
         edMessage = findViewById(R.id.edMessage);
+        edPwd = findViewById(R.id.edPwd);
         tvResult = findViewById(R.id.tvResult);
         btnRead = findViewById(R.id.btnRead);
         btnWrite = findViewById(R.id.btnWrite);
+        btnSetPwd = findViewById(R.id.btnAddPwd);
+        btnDelPwd = findViewById(R.id.btnDelPwd);
         lyWait = findViewById(R.id.lyWait);
         tvWait = findViewById(R.id.tvWait);
 
         btnRead.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                isWrite = false;
+                status = 0;
                 tvWait.setText("Approach the Tag to READ it");
                 lyWait.setVisibility(View.VISIBLE);
             }
@@ -74,8 +82,26 @@ public class MainActivity extends AppCompatActivity {
         btnWrite.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                isWrite = true;
+                status = 1;
                 tvWait.setText("Approach the Tag to WRITE it");
+                lyWait.setVisibility(View.VISIBLE);
+            }
+        });
+
+        btnSetPwd.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                status = 2;
+                tvWait.setText("Approach the Tag to SET PWD it");
+                lyWait.setVisibility(View.VISIBLE);
+            }
+        });
+
+        btnDelPwd.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                status = 3;
+                tvWait.setText("Approach the Tag to DEL PWD it");
                 lyWait.setVisibility(View.VISIBLE);
             }
         });
@@ -109,12 +135,20 @@ public class MainActivity extends AppCompatActivity {
         super.onNewIntent(intent);
         Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
 
-        if(tag != null && !isWrite) {
-            tvResult.setText(readFromNFC(tag));
-        }
-        else if(tag != null && isWrite) {
-            String message = edMessage.getText().toString();
-            writeToNfc(tag, message);
+        if(tag != null) {
+            switch (status) {
+                case 0:
+                    tvResult.setText(readFromNFC(tag));
+                    break;
+                case 1:
+                    String message = edMessage.getText().toString();
+                    writeToNfc(tag, message);
+                    break;
+                case 2:
+                    String pwd = edPwd.getText().toString();
+                    tvResult.setText(Arrays.toString(pwd.getBytes()));
+                    break;
+            }
         }
     }
 
@@ -150,4 +184,29 @@ public class MainActivity extends AppCompatActivity {
             lyWait.setVisibility(View.GONE);
         }
     }
+
+    private void setPwd(Tag tag, byte[] pwd){
+        try {
+            NTag213 nTag213 = new NTag213(tag);
+            nTag213.connect();
+            nTag213.setPassword(
+                    new byte[]{
+                        pwd[0], pwd[1], pwd[2], pwd[3]
+                    },
+                    new byte[]{
+                        pwd[4], pwd[5], 0x00, 0x00
+                    },
+                    NTag21x.FLAG_ONLY_WRITE
+            );
+            nTag213.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            lyWait.setVisibility(View.GONE);
+        }
+    }
+
+
 }

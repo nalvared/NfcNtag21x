@@ -18,7 +18,14 @@
         android:inputType="textPersonName"
         android:hint="Message to write"/>
 
-
+    <EditText
+        android:id="@+id/edPwd"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:maxLength="6"
+        android:inputType="textPersonName"
+        android:hint="Password (6 characters)"/>
 
 
     <TableLayout
@@ -41,6 +48,23 @@
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/colorAccent"
                 android:text="Write"
+                android:layout_weight="1" />
+        </TableRow>
+        <TableRow android:weightSum="2">
+            <Button
+                android:id="@+id/btnAddPwd"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorAccent"
+                android:text="Set PWD"
+                android:layout_weight="1" />
+
+            <Button
+                android:id="@+id/btnDelPwd"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorAccent"
+                android:text="Remove PWD"
                 android:layout_weight="1" />
         </TableRow>
     </TableLayout>
