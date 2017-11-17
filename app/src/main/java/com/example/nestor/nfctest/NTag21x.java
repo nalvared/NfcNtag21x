@@ -2,6 +2,7 @@ package com.example.nestor.nfctest;
 
 import android.nfc.Tag;
 import android.nfc.tech.NfcA;
+import android.util.Log;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -60,6 +61,10 @@ public class NTag21x extends Exception {
      */
 
     // Write access is protected by the password verification
+
+    public static final int FLAG_ONLY_WRITE = 0;
+    public static final int FLAG_READ_WRITE = 1;
+
     private static final byte[] ONLY_WRITE = new byte[]{
             0x00,
             0x00,
@@ -213,6 +218,43 @@ public class NTag21x extends Exception {
         }
     }
 
+    /**
+     * return codes:
+     * -2: no identifiable
+     * -1: the tag is not protected
+     *  0: the tag is protected against write
+     *  1: the tag is protected both read and write
+     * @return code
+     * @throws Exception
+     */
+    public int needAuthentication() throws Exception {
+        if (!nfcA.isConnected()) {
+            e.isNotConnected();
+            return -2;
+        }
+        byte[] response = nfcA.transceive(new byte[]{
+                READ,
+                AUTH0_CONFIG_PAGE
+        });
+        Log.i(TAG, Arrays.toString(response));
+        if(response != null && response.length == 16) {
+            if(response[3] != (byte) 0xFF) {
+                byte access = response[4];
+                char prot = String.format("%8s", Integer.toBinaryString(access & 0xFF))
+                        .replace(' ', '0').charAt(0);
+                Log.i(TAG, String.valueOf(prot));
+                if (prot == '0') {
+                    return 0;
+                }
+                else if (prot == '1') {
+                    return 1;
+                }
+            }
+            return -1;
+        }
+        return -2;
+    }
+
     public byte[] getAuthConfigPage() throws Exception {
         if (!nfcA.isConnected()) {
             e.isNotConnected();
@@ -231,9 +273,15 @@ public class NTag21x extends Exception {
         });
     }
 
-    public void setPassword(byte[] pwd, byte[] pack) throws Exception {
+    public void setPassword(byte[] pwd, byte[] pack, int flag) throws Exception {
         writePage(pwd, PWD_CONFIG_PAGE);
         writePage(pack, PACK_CONFIG_PAGE);
+        if (flag == FLAG_ONLY_WRITE){
+            writePage(ONLY_WRITE, ACCESS_CONFIG_PAGE);
+        }
+        else if (flag == FLAG_READ_WRITE) {
+            writePage(READ_WRITE, ACCESS_CONFIG_PAGE);
+        }
         writePage(ALL_PAGES, AUTH0_CONFIG_PAGE);
     }
 
