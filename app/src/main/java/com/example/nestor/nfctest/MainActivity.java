@@ -1,5 +1,6 @@
 package com.example.nestor.nfctest;
 
+import android.annotation.TargetApi;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -11,6 +12,7 @@ import android.nfc.Tag;
 import android.nfc.TagLostException;
 import android.nfc.tech.MifareUltralight;
 import android.nfc.tech.Ndef;
+import android.nfc.tech.NdefFormatable;
 import android.nfc.tech.NfcA;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
@@ -20,6 +22,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.io.IOException;
@@ -36,11 +39,14 @@ public class MainActivity extends AppCompatActivity {
 
     NfcAdapter mNfcAdapter;
 
-    EditText edCmd;
-    Button btnCmd;
+    EditText edMessage;
     TextView tvResult;
+    TextView tvWait;
+    LinearLayout lyWait;
 
-    byte[] command;
+    private Button btnRead;
+    private Button btnWrite;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,29 +55,31 @@ public class MainActivity extends AppCompatActivity {
 
         mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
-        edCmd = findViewById(R.id.edCmd);
+        edMessage = findViewById(R.id.edMessage);
         tvResult = findViewById(R.id.tvResult);
-        btnCmd = findViewById(R.id.btnCmd);
+        btnRead = findViewById(R.id.btnRead);
+        btnWrite = findViewById(R.id.btnWrite);
+        lyWait = findViewById(R.id.lyWait);
+        tvWait = findViewById(R.id.tvWait);
 
-        btnCmd.setOnClickListener(new View.OnClickListener() {
+        btnRead.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String cmd = edCmd.getText().toString();
-                command = hexStringToByteArray(cmd);
-                Log.i(TAG, Arrays.toString(command));
+                isWrite = false;
+                tvWait.setText("Approach the Tag to READ it");
+                lyWait.setVisibility(View.VISIBLE);
             }
         });
 
-    }
+        btnWrite.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                isWrite = true;
+                tvWait.setText("Approach the Tag to WRITE it");
+                lyWait.setVisibility(View.VISIBLE);
+            }
+        });
 
-    public static byte[] hexStringToByteArray(String s) {
-        int len = s.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i+1), 16));
-        }
-        return data;
     }
 
     @Override
@@ -96,84 +104,50 @@ public class MainActivity extends AppCompatActivity {
             mNfcAdapter.disableForegroundDispatch(this);
     }
 
-    private static final byte READ = 0x30;
-    private static final byte PAGE_41 = 0x29;
-
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
 
-        Log.d(TAG, "onNewIntent: "+intent.getAction());
+        if(tag != null && !isWrite) {
+            tvResult.setText(readFromNFC(tag));
+        }
+        else if(tag != null && isWrite) {
+            String message = edMessage.getText().toString();
+            writeToNfc(tag, message);
+        }
+    }
+
+    private String readFromNFC(Tag tag) {
 
         try {
-
-            byte[] pwd = new byte[] { (byte)0x68, (byte)0x6F, (byte)0x6C, (byte)0x61 };
-            byte[] pack = new byte[] { (byte)0x52, (byte)0x52, (byte) 0x00, (byte) 0x00 };
-
             NTag213 nTag213 = new NTag213(tag);
             nTag213.connect();
-            //nTag213.setPassword(pwd, pack, NTag213.FLAG_ONLY_WRITE);
-            nTag213.removePassword(pwd,pack);
-            int protection = nTag213.needAuthentication();
-            Log.i(TAG, String.valueOf(protection));
+            byte[] response = nTag213.read();
             nTag213.close();
+            return new String(response);
+        } catch (IOException e) {
+            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            lyWait.setVisibility(View.GONE);
         }
-
+        return null;
     }
 
-    private void print(byte[] bytes) {
-        Log.i(TAG, Arrays.toString(bytes));
-    }
-
-    /*private void readFromNFC(Ndef ndef) {
-
+    private void writeToNfc(Tag tag, String message){
         try {
-            ndef.connect();
-            NdefMessage ndefMessage = ndef.getNdefMessage();
-            String message = new String(ndefMessage.getRecords()[0].getPayload());
-            Log.d(TAG, "readFromNFC: "+message);
-
-            Log.i(TAG, (Arrays.toString(ndef.getNdefMessage().toByteArray())));
-
-            for (NdefRecord record: ndef.getNdefMessage().getRecords()){
-                Log.d(TAG, new String(record.getType()));
-                Log.d(TAG, new String(record.getPayload()));
-            }
-
-            edRead.setText(message);
-            ndef.close();
-
-        } catch (IOException | FormatException e) {
+            NTag213 nTag213 = new NTag213(tag);
+            nTag213.connect();
+            nTag213.write(message.getBytes());
+            nTag213.close();
+        } catch (IOException e) {
             e.printStackTrace();
-
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            lyWait.setVisibility(View.GONE);
         }
-    }*/
-
-    /*@RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
-    private void writeToNfc(Ndef ndef, String message){
-
-        if (ndef != null) {
-
-            try {
-                ndef.connect();
-                NdefRecord mimeRecord = NdefRecord.createMime("text/plain",
-                        message.getBytes(Charset.forName("US-ASCII")));
-                ndef.writeNdefMessage(new NdefMessage(mimeRecord));
-                ndef.close();
-                //Write Successful
-
-            } catch (IOException | FormatException e) {
-                e.printStackTrace();
-
-
-            } finally {
-
-            }
-
-        }
-    }*/
+    }
 }

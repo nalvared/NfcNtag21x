@@ -155,7 +155,7 @@ public class NTag21x extends Exception {
         }
         byte[] response = getUserMemory();
         int i = 0;
-        while (i < response.length && response[i] != (byte) 0xFF) {
+        while (i < response.length && response[i] != (byte) 0x00) {
             i += 1;
         }
         return Arrays.copyOf(response, i);
@@ -189,7 +189,7 @@ public class NTag21x extends Exception {
             i += 1;
         }
         while (i < len) {
-            copy[i] = (byte) 0xFF;
+            copy[i] = (byte) 0x00;
             i += 1;
         }
         byte currentPage = PAGE_USER_START;
@@ -210,10 +210,24 @@ public class NTag21x extends Exception {
         return true;
     }
 
+    public void authAndWrite(byte[] pwd, byte[] pack, byte[] pages) throws Exception {
+        int isNeeded = -2;
+        if ((isNeeded = needAuthentication()) != -1) {
+            if (isNeeded == -2) {
+                e.isNotConnected();
+                return;
+            }
+            byte[] response = authentication(pwd);
+            if (response[0] == pack[0] && response[1] == pack[1]) {
+                write(pages);
+            }
+        }
+    }
+
     public void formatMemory() throws Exception {
         byte currentPage = PAGE_USER_START;
         for (int j = PAGE_USER_START; j <= PAGE_USER_END; j++) {
-            writePage(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, currentPage);
+            writePage(new byte[]{(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00}, currentPage);
             currentPage += (byte) 0x01;
         }
     }
@@ -236,13 +250,11 @@ public class NTag21x extends Exception {
                 READ,
                 AUTH0_CONFIG_PAGE
         });
-        Log.i(TAG, Arrays.toString(response));
         if(response != null && response.length == 16) {
             if(response[3] != (byte) 0xFF) {
                 byte access = response[4];
                 char prot = String.format("%8s", Integer.toBinaryString(access & 0xFF))
                         .replace(' ', '0').charAt(0);
-                Log.i(TAG, String.valueOf(prot));
                 if (prot == '0') {
                     return 0;
                 }

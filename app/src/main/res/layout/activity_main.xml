@@ -8,20 +8,65 @@
     android:padding="16dp"
     tools:context="com.example.nestor.nfctest.MainActivity">
 
+
+
     <EditText
-        android:id="@+id/edCmd"
+        android:id="@+id/edMessage"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
         android:inputType="textPersonName"
-        android:hint="Command bytes"/>
+        android:hint="Message to write"/>
 
-    <Button
-        android:id="@+id/btnCmd"
-        android:layout_width="wrap_content"
+
+
+
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TableRow android:weightSum="2">
+
+            <Button
+                android:id="@+id/btnRead"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorAccent"
+                android:text="Read"
+                android:layout_weight="1"/>
+
+            <Button
+                android:id="@+id/btnWrite"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorAccent"
+                android:text="Write"
+                android:layout_weight="1" />
+        </TableRow>
+    </TableLayout>
+
+    <LinearLayout
+        android:id="@+id/lyWait"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Send CMD" />
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:visibility="gone">
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            android:layout_marginBottom="16dp"/>
 
+        <TextView
+            android:id="@+id/tvWait"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="Approach the Tag to read it"/>
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tvResult"
