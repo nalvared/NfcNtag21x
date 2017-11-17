@@ -110,30 +110,23 @@ public class MainActivity extends AppCompatActivity {
         try {
 
             byte[] pwd = new byte[] { (byte)0x68, (byte)0x6F, (byte)0x6C, (byte)0x61 };
-            byte[] pack = new byte[] { (byte)0x52, (byte)0x52 };
+            byte[] pack = new byte[] { (byte)0x52, (byte)0x52, (byte) 0x00, (byte) 0x00 };
 
             NTag213 nTag213 = new NTag213(tag);
             nTag213.connect();
-            //nTag213.setTimeout(2000);
-
-            byte[] message = ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, " +
-                    "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut " +
-                    "enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut " +
-                    "aliquip ex ea commodo consequat.").getBytes();
-            boolean isCorrect = nTag213.writeToTheLimit(message);
-
-            Log.i(TAG, String.valueOf(isCorrect));
-            Log.i(TAG, Arrays.toString(nTag213.getUserMemory()));
-            Log.i(TAG, new String(nTag213.getUserMemory()));
-
-            Log.i(TAG, Arrays.toString(nTag213.read()));
-            Log.i(TAG, new String(nTag213.read()));
+            nTag213.setTimeout(2000);
+            byte[] message = nTag213.getAuthConfigPage();
+            Log.i(TAG, Arrays.toString(message));
+            //nTag213.setPassword(pwd, pack);
+            byte[] pck = nTag213.authentication(pwd);
+            nTag213.removePassword(pwd, pack);
+            Log.i(TAG, Arrays.toString(pck));
+            message = nTag213.getAuthConfigPage();
+            Log.i(TAG, Arrays.toString(message));
             nTag213.close();
 
 
 
-        } catch (IOException e) {
-            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
