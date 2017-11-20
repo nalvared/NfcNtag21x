@@ -67,6 +67,23 @@
                 android:text="Remove PWD"
                 android:layout_weight="1" />
         </TableRow>
+        <TableRow android:weightSum="2">
+            <Button
+                android:id="@+id/btnAuthAndWrite"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorAccent"
+                android:text="Write with PWD"
+                android:layout_weight="1" />
+
+            <Button
+                android:id="@+id/btnHasPwd"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorAccent"
+                android:text="Check PWD"
+                android:layout_weight="1" />
+        </TableRow>
     </TableLayout>
 
     <LinearLayout

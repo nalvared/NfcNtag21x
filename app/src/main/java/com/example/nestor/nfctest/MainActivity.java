@@ -2,6 +2,7 @@ package com.example.nestor.nfctest;
 
 import android.annotation.TargetApi;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.nfc.FormatException;
@@ -20,6 +21,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -51,6 +53,8 @@ public class MainActivity extends AppCompatActivity {
     Button btnWrite;
     Button btnSetPwd;
     Button btnDelPwd;
+    Button btnAuthAndWrite;
+    Button btnHasPwd;
 
 
     @Override
@@ -67,14 +71,17 @@ public class MainActivity extends AppCompatActivity {
         btnWrite = findViewById(R.id.btnWrite);
         btnSetPwd = findViewById(R.id.btnAddPwd);
         btnDelPwd = findViewById(R.id.btnDelPwd);
+        btnAuthAndWrite = findViewById(R.id.btnAuthAndWrite);
+        btnHasPwd = findViewById(R.id.btnHasPwd);
         lyWait = findViewById(R.id.lyWait);
         tvWait = findViewById(R.id.tvWait);
 
         btnRead.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                hideKeyBoard();
                 status = 0;
-                tvWait.setText("Approach the Tag to READ it");
+                tvWait.setText("Approach the Tag to\nread it");
                 lyWait.setVisibility(View.VISIBLE);
             }
         });
@@ -82,8 +89,9 @@ public class MainActivity extends AppCompatActivity {
         btnWrite.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                hideKeyBoard();
                 status = 1;
-                tvWait.setText("Approach the Tag to WRITE it");
+                tvWait.setText("Approach the Tag to\nwrite it");
                 lyWait.setVisibility(View.VISIBLE);
             }
         });
@@ -91,8 +99,9 @@ public class MainActivity extends AppCompatActivity {
         btnSetPwd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                hideKeyBoard();
                 status = 2;
-                tvWait.setText("Approach the Tag to SET PWD it");
+                tvWait.setText("Approach the Tag to\nset password");
                 lyWait.setVisibility(View.VISIBLE);
             }
         });
@@ -100,8 +109,29 @@ public class MainActivity extends AppCompatActivity {
         btnDelPwd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                hideKeyBoard();
                 status = 3;
-                tvWait.setText("Approach the Tag to DEL PWD it");
+                tvWait.setText("Approach the Tag to\ndelete password");
+                lyWait.setVisibility(View.VISIBLE);
+            }
+        });
+
+        btnAuthAndWrite.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideKeyBoard();
+                status = 4;
+                tvWait.setText("Approach the Tag to\nwrite with authentication");
+                lyWait.setVisibility(View.VISIBLE);
+            }
+        });
+
+        btnHasPwd.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideKeyBoard();
+                status = 5;
+                tvWait.setText("Approach the Tag to\ncheck if it has password");
                 lyWait.setVisibility(View.VISIBLE);
             }
         });
@@ -130,6 +160,13 @@ public class MainActivity extends AppCompatActivity {
             mNfcAdapter.disableForegroundDispatch(this);
     }
 
+    private void hideKeyBoard() {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+    }
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -142,14 +179,44 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case 1:
                     String message = edMessage.getText().toString();
-                    writeToNfc(tag, message);
+                    String r = writeToNfc(tag, message.getBytes());
+                    if (r != null)
+                        tvResult.setText(r);
+                    else
+                        tvResult.setText("Error while writing");
                     break;
                 case 2:
                     String pwd = edPwd.getText().toString();
-                    tvResult.setText(Arrays.toString(pwd.getBytes()));
+                    r = setPwd(tag, pwd.getBytes());
+                    if (r != null)
+                    tvResult.setText(r);
+                else
+                    tvResult.setText("Error while setting password");
+                    break;
+                case 3:
+                    pwd = edPwd.getText().toString();
+                    r = removePwd(tag, pwd.getBytes());
+                    if (r != null)
+                        tvResult.setText(r);
+                    else
+                        tvResult.setText("Error while removing password");
+                    break;
+                case 4:
+                    message = edMessage.getText().toString();
+                    pwd = edPwd.getText().toString();
+                    r = authAndWrite(tag, pwd.getBytes(), message.getBytes());
+                    if (r != null)
+                        tvResult.setText(r);
+                    else
+                        tvResult.setText("Error while writing");
+                    break;
+                case 5:
+                    int hasPwd = hasPwd(tag);
+                    tvResult.setText(hasPwdMessage(hasPwd));
                     break;
             }
         }
+        lyWait.setVisibility(View.GONE);
     }
 
     private String readFromNFC(Tag tag) {
@@ -164,28 +231,27 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            lyWait.setVisibility(View.GONE);
         }
         return null;
     }
 
-    private void writeToNfc(Tag tag, String message){
+    private String writeToNfc(Tag tag, byte[] message){
         try {
             NTag213 nTag213 = new NTag213(tag);
             nTag213.connect();
-            nTag213.write(message.getBytes());
+            nTag213.write(message);
             nTag213.close();
+            return "Write successful";
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            lyWait.setVisibility(View.GONE);
+            return null;
         }
     }
 
-    private void setPwd(Tag tag, byte[] pwd){
+    private String setPwd(Tag tag, byte[] pwd){
         try {
             NTag213 nTag213 = new NTag213(tag);
             nTag213.connect();
@@ -199,14 +265,90 @@ public class MainActivity extends AppCompatActivity {
                     NTag21x.FLAG_ONLY_WRITE
             );
             nTag213.close();
+            return "Password has been updated successful";
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private String removePwd(Tag tag, byte[] pwd){
+        try {
+            NTag213 nTag213 = new NTag213(tag);
+            nTag213.connect();
+            nTag213.removePassword(
+                    new byte[]{
+                            pwd[0], pwd[1], pwd[2], pwd[3]
+                    },
+                    new byte[]{
+                            pwd[4], pwd[5], 0x00, 0x00
+                    }
+            );
+            nTag213.close();
+            return "Password has been removed successful";
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private String authAndWrite(Tag tag, byte[] pwd, byte[] message){
+        try {
+            NTag213 nTag213 = new NTag213(tag);
+            nTag213.connect();
+            nTag213.authAndWrite(
+                    new byte[]{
+                            pwd[0], pwd[1], pwd[2], pwd[3]
+                    },
+                    new byte[]{
+                            pwd[4], pwd[5], 0x00, 0x00
+                    },
+                    message
+            );
+            nTag213.close();
+            return "Write successful";
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private int hasPwd(Tag tag){
+        try {
+            NTag213 nTag213 = new NTag213(tag);
+            nTag213.connect();
+            int i = nTag213.needAuthentication();
+            nTag213.close();
+            return i;
         } catch (IOException e) {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            lyWait.setVisibility(View.GONE);
         }
+        return -2;
     }
 
-
+    private String hasPwdMessage(int i) {
+        switch (i) {
+            case -2:
+                return "[-2] no identifiable";
+            case -1:
+                return "[-1] the tag is not protected";
+            case 0:
+                return "[0] the tag is protected against write";
+            case 1:
+                return "[1] the tag is protected both read and write";
+            default:
+                return "[X] no identifiable";
+        }
+    }
 }

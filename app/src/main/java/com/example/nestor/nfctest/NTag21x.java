@@ -178,6 +178,7 @@ public class NTag21x extends Exception {
             e.pageUserExceeded(pages.length);
             return;
         }
+        formatMemory();
         int len = pages.length;
         while (len % 4 != 0) {
             len += 1;
