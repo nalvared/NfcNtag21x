@@ -35,8 +35,6 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getCanonicalName();
 
-    public static final String MIME_TEXT_PLAIN = "text/plain";
-
     int status = 0;
 
     NfcAdapter mNfcAdapter;

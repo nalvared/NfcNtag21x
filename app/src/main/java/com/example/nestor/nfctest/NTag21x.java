@@ -2,7 +2,6 @@ package com.example.nestor.nfctest;
 
 import android.nfc.Tag;
 import android.nfc.tech.NfcA;
-import android.util.Log;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -11,7 +10,13 @@ import java.util.Arrays;
  * Created by nestor on 16/11/17.
  */
 
-public class NTag21x extends Exception {
+/**
+ * Specification document available in:
+ * https://www.nxp.com/docs/en/data-sheet/NTAG213_215_216.pdf
+ */
+
+public class NTag21x extends Exception
+        implements NTag21xException{
 
     private static final String TAG = NTag21x.class.getCanonicalName();
 
@@ -98,10 +103,7 @@ public class NTag21x extends Exception {
     public NTag21x(Tag tag) {
         this.tag = tag;
         this.nfcA = NfcA.get(tag);
-    }
-
-    public void setInterfaceException(NTag21xException e) {
-        this.e = e;
+        this.e = this;
     }
 
     public void connect() throws IOException {
@@ -314,4 +316,20 @@ public class NTag21x extends Exception {
         }
         return new String(hexChars);
     }
+
+    // [BEGIN] - Implementing interface
+    private static final String E_USER_PAGE_LIMIT = "Writing %d bytes and the Tag has only %d bytes";
+    private static final String E_TIMEOUT = "Tag must be connected (Check timeout for large operations)";
+
+    @Override
+    public void isNotConnected() throws Exception {
+        throw new Exception(E_TIMEOUT);
+    }
+
+    @Override
+    public void pageUserExceeded(int max) throws Exception {
+        int bytes = (PAGE_USER_END - PAGE_USER_START) * 4;
+        throw new Exception(String.format(E_USER_PAGE_LIMIT, max, bytes));
+    }
+    // [ END ] - Implementing interface
 }
