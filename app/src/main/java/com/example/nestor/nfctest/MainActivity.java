@@ -1,25 +1,13 @@
 package com.example.nestor.nfctest;
 
-import android.annotation.TargetApi;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.nfc.FormatException;
-import android.nfc.NdefMessage;
-import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
-import android.nfc.TagLostException;
-import android.nfc.tech.MifareUltralight;
-import android.nfc.tech.Ndef;
-import android.nfc.tech.NdefFormatable;
-import android.nfc.tech.NfcA;
-import android.os.Build;
-import android.support.annotation.RequiresApi;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -27,9 +15,9 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.nalvared.ntag21xseries.NTag213;
+
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -260,7 +248,7 @@ public class MainActivity extends AppCompatActivity {
                     new byte[]{
                         pwd[4], pwd[5], 0x00, 0x00
                     },
-                    NTag21x.FLAG_ONLY_WRITE
+                    NTag213.FLAG_ONLY_WRITE
             );
             nTag213.close();
             return "Password has been updated successful";

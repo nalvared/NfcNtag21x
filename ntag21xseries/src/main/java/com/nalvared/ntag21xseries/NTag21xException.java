@@ -1,4 +1,4 @@
-package com.example.nestor.nfctest;
+package com.nalvared.ntag21xseries;
 
 /**
  * Created by nestor on 17/11/17.

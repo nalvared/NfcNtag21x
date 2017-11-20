@@ -1,4 +1,4 @@
-package com.example.nestor.nfctest;
+package com.nalvared.ntag21xseries;
 
 import android.nfc.Tag;
 import android.nfc.tech.NfcA;
