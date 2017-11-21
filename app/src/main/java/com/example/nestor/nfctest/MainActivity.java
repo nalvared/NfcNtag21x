@@ -8,6 +8,7 @@ import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -16,6 +17,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.nalvared.ntag21xseries.NTag213;
+import com.nalvared.ntag21xseries.NTag21xEventListener;
 
 import java.io.IOException;
 
@@ -223,7 +225,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String writeToNfc(Tag tag, byte[] message){
         try {
-            NTag213 nTag213 = new NTag213(tag);
+            NTag213 nTag213 = new NTag213(tag, this);
             nTag213.connect();
             nTag213.write(message);
             nTag213.close();
@@ -239,7 +241,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String setPwd(Tag tag, byte[] pwd){
         try {
-            NTag213 nTag213 = new NTag213(tag);
+            NTag213 nTag213 = new NTag213(tag, this);
             nTag213.connect();
             nTag213.setPassword(
                     new byte[]{
@@ -263,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String removePwd(Tag tag, byte[] pwd){
         try {
-            NTag213 nTag213 = new NTag213(tag);
+            NTag213 nTag213 = new NTag213(tag, this);
             nTag213.connect();
             nTag213.removePassword(
                     new byte[]{
@@ -286,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String authAndWrite(Tag tag, byte[] pwd, byte[] message){
         try {
-            NTag213 nTag213 = new NTag213(tag);
+            NTag213 nTag213 = new NTag213(tag, this);
             nTag213.connect();
             nTag213.authAndWrite(
                     new byte[]{
@@ -310,7 +312,7 @@ public class MainActivity extends AppCompatActivity {
 
     private int hasPwd(Tag tag){
         try {
-            NTag213 nTag213 = new NTag213(tag);
+            NTag213 nTag213 = new NTag213(tag, this);
             nTag213.connect();
             int i = nTag213.needAuthentication();
             nTag213.close();

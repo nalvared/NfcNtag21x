@@ -2,6 +2,7 @@ package com.nalvared.ntag21xseries;
 
 import android.nfc.Tag;
 import android.nfc.tech.NfcA;
+import android.util.Log;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -15,13 +16,13 @@ import java.util.Arrays;
  * https://www.nxp.com/docs/en/data-sheet/NTAG213_215_216.pdf
  */
 
-public class NTag21x extends Exception
-        implements NTag21xException{
+public class NTag21x extends Exception {
 
     private static final String TAG = NTag21x.class.getCanonicalName();
 
     Tag tag;
     NfcA nfcA;
+    boolean debugMode = false;
 
     // User Memory (It's defined in the children)
     protected byte PAGE_USER_START;
@@ -38,149 +39,153 @@ public class NTag21x extends Exception
     private static final byte WRITE = (byte) 0xA2;
     private static final byte PWD_AUTH = (byte)  0x1B;
 
-    // Mirror page (00 00 00 00 | 00 00 00 FF)
-    // If you like protects all pages AUTH0 should be 00
-    // If you don't like protect any page AUTH0 should be FF
-    /**
-     * MIRROR       04h; need UID ASCII mirror_conf
-     * RFUI         00h
-     * MIRROR_PAGE  00h
-     * AUTH0        00h ... FFh, defines the page address from which
-     *                           the password verification is required
-     */
-
-    // Access page (00 00 00 00 | 80 00 00 00)
-    // By default with no limiting of wrong passwords
-    /**
-     * ACCESS        00h | 80h
-     *  PROT                1b = 0 | 1; flag for protection (0 write; 1 read and write)
-     *  CFGLCK              1b = 0
-     *  RFUI                1b = 0
-     *  NFC_CNT_EN          1b = 0
-     *  NFC_CNT_PWD_PROT    1b = 0
-     *  AUTHLIM             3b = 000 | (001 ... 111); limiting of negative password
-     *                                verification attempts disabled
-     * RFUI          00h
-     * RFUI          00h
-     * RFUI          00h
-     */
-
     // Write access is protected by the password verification
-
     public static final int FLAG_ONLY_WRITE = 0;
     public static final int FLAG_READ_WRITE = 1;
 
-    private static final byte[] ONLY_WRITE = new byte[]{
-            0x00,
-            0x00,
-            0x00,
-            0x00
-    };
-    private static final byte[] READ_WRITE = new byte[]{
-            (byte) 0x80,
-            0x00,
-            0x00,
-            0x00
-    };
+    private static final byte[] ONLY_WRITE = new byte[]{ 0x00, 0x00, 0x00, 0x00 };
+    private static final byte[] READ_WRITE = new byte[]{ (byte) 0x80, 0x00, 0x00, 0x00 };
+    private static final byte[] ALL_PAGES = new byte[]{ 0x04, 0x00, 0x00, 0x00 };
+    private static final byte[] NO_PAGES = new byte[]{ 0x04, 0x00, 0x00, (byte) 0xFF };
 
-    private static final byte[] ALL_PAGES = new byte[]{
-            0x04,
-            0x00,
-            0x00,
-            0x00
-    };
-
-    private static final byte[] NO_PAGES = new byte[]{
-            0x04,
-            0x00,
-            0x00,
-            (byte) 0xFF
-    };
-
-
-    private NTag21xException e;
+    // Error codes
+    private final static int ERROR_CONNECTION = 0;
+    private final static int ERROR_TRANSCEIVE = 1;
+    private final static int ERROR_MAX_CAPACITY = 2;
+    private final static int ERROR_AUTHENTICATION_VERIFY = 3;
 
     public NTag21x(Tag tag) {
         this.tag = tag;
         this.nfcA = NfcA.get(tag);
-        this.e = this;
     }
 
-    public void connect() throws IOException {
-        nfcA.connect();
+    /**
+     * Enables debug mode for seeing the errors trace
+     * @param enable activates print stack of the errors
+     */
+    public void debugMode(boolean enable) {
+        debugMode = enable;
     }
 
-    public void close() throws IOException {
-        nfcA.close();
+    /**
+     * Connect with the Tag if it's necessary
+     * @param eventListener
+     * @return if it has been connected
+     */
+    public boolean connect(NTag21xEventListener eventListener) {
+        if (!nfcA.isConnected()) {
+            try {
+                nfcA.connect();
+                eventListener.OnSuccess("Connection is now established");
+            } catch (IOException e) {
+                eventListener.OnError(e.getMessage(), ERROR_CONNECTION);
+                e.printStackTrace();
+            }
+        }
+        return nfcA.isConnected();
     }
 
-    public void setTimeout(int millis) throws IOException {
+    /**
+     * Close the connection with the Tag if it's necessary
+     * @param eventListener
+     * @return if it has been closed
+     */
+    public boolean close(NTag21xEventListener eventListener) {
+        if (nfcA.isConnected()) {
+            try {
+                nfcA.close();
+                eventListener.OnSuccess("Connection is now closed");
+            } catch (IOException e) {
+                eventListener.OnError(e.getMessage(), ERROR_CONNECTION);
+                e.printStackTrace();
+            }
+        }
+        return nfcA.isConnected();
+    }
+
+    /**
+     * Defines the time of the connection
+     * Normally it is used for large operations o many of them
+     * @param millis is the time in milliseconds
+     */
+    public void setTimeout(int millis) {
         nfcA.setTimeout(millis);
     }
 
-    public byte[] getUidBytes() throws Exception {
-        if (!nfcA.isConnected()) {
-            e.isNotConnected();
-            return null;
+    /**
+     * Get Static ID (UID) of the Tag in byte array
+     * @param eventListener
+     */
+    public void getStaticId(NTag21xEventListener eventListener) {
+        try {
+            byte[] response = nfcA.transceive(new byte[] {
+                    READ,
+                    (byte)0x00
+            });
+            eventListener.OnSuccess(Arrays.copyOf(response,7));
+        } catch (IOException e) {
+            eventListener.OnError(e.getMessage(), ERROR_TRANSCEIVE);
+            e.printStackTrace();
         }
-        byte[] response;
-        response = nfcA.transceive(new byte[] {
-                READ,
-                (byte)0x00
-        });
-        byte[] uid = Arrays.copyOf(response,7);
-        return uid;
     }
 
-    public String getUid() throws Exception {
-        return bytesToHex(getUidBytes());
+    private byte[] readMemory(NTag21xEventListener eventListener) {
+        try {
+            byte[] response = nfcA.transceive(new byte[] {
+                    FAST_READ,
+                    PAGE_USER_START,
+                    PAGE_USER_END
+            });
+            return response;
+        } catch (IOException e) {
+            eventListener.OnError(e.getMessage(), ERROR_TRANSCEIVE);
+            if (debugMode)
+                e.printStackTrace();
+        }
+        return null;
     }
 
-    public byte[] getUserMemory() throws Exception {
-        if (!nfcA.isConnected()) {
-            e.isNotConnected();
-            return null;
-        }
-        byte[] response;
-        response = nfcA.transceive(new byte[] {
-                FAST_READ,
-                PAGE_USER_START,
-                PAGE_USER_END
-        });
-        return response;
+    public void getUserMemory(NTag21xEventListener eventListener) {
+        byte[] response = readMemory(eventListener);
+        if (response != null)
+            eventListener.OnSuccess(response);
     }
 
-    public byte[] read() throws Exception {
-        if (!nfcA.isConnected()) {
-            e.isNotConnected();
-            return null;
-        }
-        byte[] response = getUserMemory();
+    public void read(NTag21xEventListener eventListener) {
+        byte[] response = readMemory(eventListener);
         int i = 0;
         while (i < response.length && response[i] != (byte) 0x00) {
             i += 1;
         }
-        return Arrays.copyOf(response, i);
+        if (response != null)
+            eventListener.OnSuccess(Arrays.copyOf(response, i));
     }
 
-    public void writePage(byte[] page, byte origin) throws Exception {
-        if (!nfcA.isConnected()) {
-            e.isNotConnected();
-            return;
+    private byte[] writeMemoryPage(byte[] page, byte origin, NTag21xEventListener eventListener) {
+        try {
+            byte[] result = nfcA.transceive(new byte[] {
+                    WRITE,
+                    origin,
+                    page[0], page[1], page[2], page[3]
+            });
+            return result;
+        } catch (IOException e) {
+            eventListener.OnError(e.getMessage(), ERROR_TRANSCEIVE);
+            if(debugMode) e.printStackTrace();
+        } catch (IllegalStateException e) {
+            eventListener.OnError(e.getMessage(), ERROR_TRANSCEIVE);
+            if(debugMode) e.printStackTrace();
         }
-        nfcA.transceive(new byte[] {
-                WRITE,
-                origin,
-                page[0], page[1], page[2], page[3]
-        });
+        return null;
     }
 
-    public void write(byte[] pages) throws Exception {
+    public void write(byte[] pages, NTag21xEventListener eventListener) {
         if (pages.length / 4 > PAGE_USER_END - PAGE_USER_START + 1) {
-            e.pageUserExceeded(pages.length);
+            eventListener.OnError("The length of message exceeded the tag capacity",
+                    ERROR_MAX_CAPACITY);
             return;
         }
-        formatMemory();
+        formatMemory(eventListener);
         int len = pages.length;
         while (len % 4 != 0) {
             len += 1;
@@ -198,41 +203,50 @@ public class NTag21x extends Exception
         byte currentPage = PAGE_USER_START;
         for (int j = 0; j < len; j += 4) {
             byte[] curr = Arrays.copyOfRange(copy, j, j + 4);
-            writePage(curr, currentPage);
+            writeMemoryPage(curr, currentPage, eventListener);
             currentPage += (byte) 0x01;
         }
+        eventListener.OnSuccess("The writing operation has been completed successfully");
     }
 
-    public boolean writeToTheLimit(byte[] pages) throws Exception {
+    public void writeAndTrucate(byte[] pages, NTag21xEventListener eventListener) {
         if (pages.length / 4 > PAGE_USER_END - PAGE_USER_START + 1) {
             pages = Arrays.copyOf(pages, (PAGE_USER_END - PAGE_USER_START + 1) * 4);
-            write(pages);
-            return false;
+            write(pages, eventListener);
         }
-        write(pages);
-        return true;
+        write(pages, eventListener);
     }
 
-    public void authAndWrite(byte[] pwd, byte[] pack, byte[] pages) throws Exception {
+    public void authAndWrite(byte[] pwd, byte[] pack, byte[] pages,
+                             NTag21xEventListener eventListener) {
         int isNeeded = -2;
-        if ((isNeeded = needAuthentication()) != -1) {
+        if ((isNeeded = needAuthentication(eventListener)) != -1) {
             if (isNeeded == -2) {
-                e.isNotConnected();
                 return;
             }
-            byte[] response = authentication(pwd);
+            byte[] response = new byte[0];
+            try {
+                response = nfcA.transceive(new byte[]{
+                        PWD_AUTH,
+                        pwd[0], pwd[1], pwd[2], pwd[3]
+                });
+            } catch (IOException e) {
+                if (debugMode) e.printStackTrace();
+            }
             if (response[0] == pack[0] && response[1] == pack[1]) {
-                write(pages);
+                write(pages, eventListener);
             }
         }
     }
 
-    public void formatMemory() throws Exception {
+    public void formatMemory(NTag21xEventListener eventListener) {
         byte currentPage = PAGE_USER_START;
         for (int j = PAGE_USER_START; j <= PAGE_USER_END; j++) {
-            writePage(new byte[]{(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00}, currentPage);
+            writeMemoryPage(new byte[]{(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00},
+                    currentPage, eventListener);
             currentPage += (byte) 0x01;
         }
+        eventListener.OnSuccess("Formatting successful");
     }
 
     /**
@@ -242,68 +256,63 @@ public class NTag21x extends Exception
      *  0: the tag is protected against write
      *  1: the tag is protected both read and write
      * @return code
-     * @throws Exception
      */
-    public int needAuthentication() throws Exception {
-        if (!nfcA.isConnected()) {
-            e.isNotConnected();
-            return -2;
-        }
-        byte[] response = nfcA.transceive(new byte[]{
-                READ,
-                AUTH0_CONFIG_PAGE
-        });
-        if(response != null && response.length == 16) {
-            if(response[3] != (byte) 0xFF) {
-                byte access = response[4];
-                char prot = String.format("%8s", Integer.toBinaryString(access & 0xFF))
-                        .replace(' ', '0').charAt(0);
-                if (prot == '0') {
-                    return 0;
+    public int needAuthentication(NTag21xEventListener eventListener) {
+        try {
+            byte[] response;
+            response = nfcA.transceive(new byte[]{
+                    READ,
+                    AUTH0_CONFIG_PAGE
+            });
+            if(response != null && response.length == 16) {
+                if(response[3] != (byte) 0xFF) {
+                    byte access = response[4];
+                    char prot = String.format("%8s", Integer.toBinaryString(access & 0xFF))
+                            .replace(' ', '0').charAt(0);
+                    if (prot == '0') {
+                        return 0;
+                    }
+                    else if (prot == '1') {
+                        return 1;
+                    }
                 }
-                else if (prot == '1') {
-                    return 1;
-                }
+                return -1;
             }
-            return -1;
+            return -2;
+        } catch (IOException e) {
+            eventListener.OnError(e.getMessage(), ERROR_AUTHENTICATION_VERIFY);
+            if (debugMode) e.printStackTrace();
         }
         return -2;
     }
 
-    public byte[] getAuthConfigPage() throws Exception {
-        if (!nfcA.isConnected()) {
-            e.isNotConnected();
-            return null;
-        }
-        return nfcA.transceive(new byte[]{
-                READ,
-                AUTH0_CONFIG_PAGE
-        });
-    }
-
-    public byte[] authentication(byte[] pwd) throws Exception {
-        return nfcA.transceive(new byte[]{
-                PWD_AUTH,
-                pwd[0], pwd[1], pwd[2], pwd[3]
-        });
-    }
-
-    public void setPassword(byte[] pwd, byte[] pack, int flag) throws Exception {
-        writePage(pwd, PWD_CONFIG_PAGE);
-        writePage(pack, PACK_CONFIG_PAGE);
+    public void setPassword(byte[] pwd, byte[] pack, int flag,
+                            NTag21xEventListener eventListener) {
+        writeMemoryPage(pwd, PWD_CONFIG_PAGE, eventListener);
+        writeMemoryPage(pack, PACK_CONFIG_PAGE, eventListener);
         if (flag == FLAG_ONLY_WRITE){
-            writePage(ONLY_WRITE, ACCESS_CONFIG_PAGE);
+            writeMemoryPage(ONLY_WRITE, ACCESS_CONFIG_PAGE, eventListener);
         }
         else if (flag == FLAG_READ_WRITE) {
-            writePage(READ_WRITE, ACCESS_CONFIG_PAGE);
+            writeMemoryPage(READ_WRITE, ACCESS_CONFIG_PAGE, eventListener);
         }
-        writePage(ALL_PAGES, AUTH0_CONFIG_PAGE);
+        writeMemoryPage(ALL_PAGES, AUTH0_CONFIG_PAGE, eventListener);
+        eventListener.OnSuccess("Password successfully assigned");
     }
 
-    public void removePassword(byte[] pwd, byte[] pack) throws Exception {
-        byte[] response = authentication(pwd);
+    public void removePassword(byte[] pwd, byte[] pack, NTag21xEventListener eventListener) {
+        byte[] response = new byte[0];
+        try {
+            response = nfcA.transceive(new byte[]{
+                    PWD_AUTH,
+                    pwd[0], pwd[1], pwd[2], pwd[3]
+            });
+        } catch (IOException e) {
+           if (debugMode) e.printStackTrace();
+        }
         if (response[0] == pack[0] && response[1] == pack[1])
-            writePage(NO_PAGES, AUTH0_CONFIG_PAGE);
+            writeMemoryPage(NO_PAGES, AUTH0_CONFIG_PAGE, eventListener);
+        eventListener.OnSuccess("Password successfully removed");
     }
 
     private String bytesToHex(byte[] bytes) {
@@ -317,19 +326,19 @@ public class NTag21x extends Exception
         return new String(hexChars);
     }
 
-    // [BEGIN] - Implementing interface
-    private static final String E_USER_PAGE_LIMIT = "Writing %d bytes and the Tag has only %d bytes";
-    private static final String E_TIMEOUT = "Tag must be connected (Check timeout for large operations)";
-
-    @Override
-    public void isNotConnected() throws Exception {
-        throw new Exception(E_TIMEOUT);
+    private String responseNAK(byte[] nak) {
+        switch (nak[0]){
+            case 0xA:
+                return "Acknowledge (ACK)";
+            case 0x0:
+                return "NAK for invalid argument (i.e. invalid page address)";
+            case 0x1:
+                return "NAK for parity or CRC error";
+            case 0x4:
+                return "NAK for invalid authentication counter overflow";
+            case 0x5:
+                return "NAK for EEPROM write error";
+        }
+        return null;
     }
-
-    @Override
-    public void pageUserExceeded(int max) throws Exception {
-        int bytes = (PAGE_USER_END - PAGE_USER_START) * 4;
-        throw new Exception(String.format(E_USER_PAGE_LIMIT, max, bytes));
-    }
-    // [ END ] - Implementing interface
 }
