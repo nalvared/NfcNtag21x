@@ -1,103 +1,125 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
     tools:context="com.example.nestor.nfctest.MainActivity">
 
 
-
-    <EditText
-        android:id="@+id/edMessage"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="textPersonName"
-        android:hint="Message to write"
-        android:lines="5"/>
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
+        <EditText
+            android:id="@+id/edMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="textPersonName"
+            android:hint="Message to write"
+            android:lines="5"/>
 
 
-    <EditText
-        android:id="@+id/edPwd"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:maxLength="6"
-        android:inputType="textPassword"
-        android:hint="Password (6 characters)" />
+        <EditText
+            android:id="@+id/edPwd"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:maxLength="6"
+            android:inputType="textPassword"
+            android:hint="Password (6 characters)" />
 
 
-    <TableLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        <TableLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-        <TableRow android:weightSum="2">
+            <TableRow android:weightSum="3">
 
-            <Button
-                android:id="@+id/btnRead"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/colorAccent"
-                android:text="Read"
-                android:layout_weight="1"/>
+                <Button
+                    android:id="@+id/btnRead"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@color/colorAccent"
+                    android:text="Read"
+                    android:layout_weight="1"/>
 
-            <Button
-                android:id="@+id/btnWrite"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/colorAccent"
-                android:text="Write"
-                android:layout_weight="1" />
-        </TableRow>
-        <TableRow android:weightSum="2">
-            <Button
-                android:id="@+id/btnAddPwd"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/colorAccent"
-                android:text="Set PWD"
-                android:layout_weight="1" />
+                <Button
+                    android:id="@+id/btnWrite"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@color/colorAccent"
+                    android:text="Write"
+                    android:layout_weight="1" />
+                <Button
+                    android:id="@+id/btnUid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@color/colorAccent"
+                    android:text="UID"
+                    android:layout_weight="1" />
+            </TableRow>
+            <TableRow android:weightSum="2">
+                <Button
+                    android:id="@+id/btnAddPwd"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@color/colorAccent"
+                    android:text="Set PWD"
+                    android:layout_weight="1" />
 
-            <Button
-                android:id="@+id/btnDelPwd"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/colorAccent"
-                android:text="Remove PWD"
-                android:layout_weight="1" />
-        </TableRow>
-        <TableRow android:weightSum="2">
-            <Button
-                android:id="@+id/btnAuthAndWrite"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/colorAccent"
-                android:text="Write with PWD"
-                android:layout_weight="1" />
+                <Button
+                    android:id="@+id/btnDelPwd"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@color/colorAccent"
+                    android:text="Remove PWD"
+                    android:layout_weight="1" />
+            </TableRow>
+            <TableRow android:weightSum="2">
+                <Button
+                    android:id="@+id/btnAuthAndWrite"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@color/colorAccent"
+                    android:text="Write with PWD"
+                    android:layout_weight="1" />
 
-            <Button
-                android:id="@+id/btnHasPwd"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/colorAccent"
-                android:text="Check PWD"
-                android:layout_weight="1" />
-        </TableRow>
-    </TableLayout>
+                <Button
+                    android:id="@+id/btnHasPwd"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@color/colorAccent"
+                    android:text="Check PWD"
+                    android:layout_weight="1" />
+            </TableRow>
+        </TableLayout>
+
+        <TextView
+            android:id="@+id/tvResult"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="Resultof\nCMD"
+            android:lines="10"/>
+
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/lyWait"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
         android:padding="16dp"
-        android:visibility="gone">
+        android:background="@color/colorPrimaryDarkT"
+        android:visibility="gone"
+        android:gravity="center">
+
         <ProgressBar
             android:id="@+id/progressBar"
-            style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:indeterminate="true"
@@ -106,17 +128,11 @@
         <TextView
             android:id="@+id/tvWait"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="Approach the Tag to read it"/>
+            android:text="Approach the Tag to read it"
+            android:textColor="#FFF"/>
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tvResult"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:text="Resultof\nCMD"
-        android:lines="10"/>
 
-</LinearLayout>
+</RelativeLayout>

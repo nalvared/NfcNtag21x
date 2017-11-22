@@ -3,11 +3,23 @@ package com.nalvared.ntag21xseries;
 import android.nfc.Tag;
 
 /**
- * Created by nestor on 16/11/17.
+ * <H1>NTag213 extends NTag21x</H1>
+ *
+ * <P>This class defines the main pages for NTag213 specific model</P>
+ *
+ * <P>Néstor Álvarez Díaz, contact[at]nalvared.com</P>
+ *
+ * @author Néstor Álvarez Díaz
+ * @version 1.0.0
+ * @date 2017-11-16
+ *
  */
-
 public class NTag213 extends NTag21x {
 
+    /**
+     * Constructor
+     * @param tag is a raw Tag object
+     */
     public NTag213(Tag tag) {
         super(tag);
         super.PAGE_USER_START = (byte) 0x04;

@@ -7,15 +7,30 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * Created by nestor on 16/11/17.
+ * <H1>NTag21x</H1>
+ *
+ * <P>This class implements the main methods for interacting with
+ * NFC NTag213, NTag215 and NTag216 models</P>
+ *
+ * <P>The difference with other libraries is that it allows used the authentication
+ * properties of the these tags</P>
+ *
+ * <P>Note that {@link android.nfc.tech.NfcA} is used to interact with the tags</P>
+ *
+ * <P>Specification document available in:
+ * <a href="https://www.nxp.com/docs/en/data-sheet/NTAG213_215_216.pdf">
+ *     https://www.nxp.com/docs/en/data-sheet/NTAG213_215_216.pdf</a>
+ * </P>
+ *
+ * <P>Néstor Álvarez Díaz, contact[at]nalvared.com</P>
+ *
+ * @author Néstor Álvarez Díaz
+ * @version 1.0.1
+ * @date 2017-11-16
+ *
  */
 
-/**
- * Specification document available in:
- * https://www.nxp.com/docs/en/data-sheet/NTAG213_215_216.pdf
- */
-
-public class NTag21x extends Exception {
+public class NTag21x {
 
     private static final String TAG = NTag21x.class.getCanonicalName();
 
@@ -51,6 +66,10 @@ public class NTag21x extends Exception {
     private static final byte[] NO_PAGES = new byte[]{ 0x04, 0x00, 0x00, (byte) 0xFF };
 
 
+    /**
+     * Constructor
+     * @param tag is a raw Tag object
+     */
     public NTag21x(Tag tag) {
         this.nfcA = NfcA.get(tag);
     }
@@ -103,7 +122,7 @@ public class NTag21x extends Exception {
      * @param eventListener @see {@link NTagEventListener}
      * @param flag indicates if the OnSuccess event sends in bytes or in string format
      */
-    public void getStaticId(NTagEventListener eventListener, int flag) {
+    public void getStaticId(int flag, NTagEventListener eventListener) {
         try {
             byte[] response = nfcA.transceive(new byte[] {
                     READ,
@@ -111,10 +130,10 @@ public class NTag21x extends Exception {
             });
             if (flag == UID_BYTES)
                 eventListener.OnSuccess(Arrays.copyOf(response,7),
-                        NTagEventListener.SC_READ_UID);
+                        NTagEventListener.READ_STATIC_ID_BYTES);
             else if (flag == UID_SRTING)
                 eventListener.OnSuccess(bytesToHex(Arrays.copyOf(response,7)),
-                        NTagEventListener.SC_READ_UID);
+                        NTagEventListener.READ_STATIC_ID_STRING);
         } catch (IOException e) {
             eventListener.OnError(e.getMessage(), NTagEventListener.ERROR_TRANSCEIVE);
             e.printStackTrace();
@@ -148,7 +167,7 @@ public class NTag21x extends Exception {
     public void getUserMemory(NTagEventListener eventListener) {
         byte[] response = readMemory(eventListener);
         if (response != null)
-            eventListener.OnSuccess(response, NTagEventListener.SC_READ);
+            eventListener.OnSuccess(response, NTagEventListener.READ_USER_MEMORY);
     }
 
     /**
@@ -162,7 +181,7 @@ public class NTag21x extends Exception {
         while (i < response.length && response[i] != (byte) 0x00) {
             i += 1;
         }
-        eventListener.OnSuccess(Arrays.copyOf(response, i), NTagEventListener.SC_READ);
+        eventListener.OnSuccess(Arrays.copyOf(response, i), NTagEventListener.READ);
     }
 
     /**
@@ -220,7 +239,7 @@ public class NTag21x extends Exception {
             writeMemoryPage(curr, currentPage, eventListener);
             currentPage += (byte) 0x01;
         }
-        eventListener.OnSuccess(NTagEventListener.ON_WRITE_SUCCESS, NTagEventListener.SC_WRITE);
+        eventListener.OnSuccess(NTagEventListener.ON_WRITE_SUCCESS, NTagEventListener.WRITE);
     }
 
     /**
@@ -266,7 +285,7 @@ public class NTag21x extends Exception {
             }
         } catch (IOException e) {
             if (debugMode) e.printStackTrace();
-            eventListener.OnError(e.getMessage(), NTagEventListener.SC_WRITE);
+            eventListener.OnError(e.getMessage(), NTagEventListener.WRITE);
         }
     }
 
@@ -366,7 +385,7 @@ public class NTag21x extends Exception {
             writeMemoryPage(READ_WRITE, ACCESS_CONFIG_PAGE, eventListener);
         }
         writeMemoryPage(ALL_PAGES, AUTH0_CONFIG_PAGE, eventListener);
-        eventListener.OnSuccess(NTagEventListener.ON_PASSWORD_ASSIGN, NTagEventListener.SC_PWD);
+        eventListener.OnSuccess(NTagEventListener.ON_PASSWORD_ASSIGN, NTagEventListener.PWD_SET);
     }
 
     /**
@@ -383,7 +402,7 @@ public class NTag21x extends Exception {
             });
             if (response[0] == pack[0] && response[1] == pack[1])
                 writeMemoryPage(NO_PAGES, AUTH0_CONFIG_PAGE, eventListener);
-            eventListener.OnSuccess(NTagEventListener.ON_PASSWORD_REMOVED, NTagEventListener.SC_PWD);
+            eventListener.OnSuccess(NTagEventListener.ON_PASSWORD_REMOVED, NTagEventListener.PWD_REMOVE);
         } catch (IOException e) {
            if (debugMode) e.printStackTrace();
             eventListener.OnError(e.getMessage(), NTagEventListener.ERROR_AUTHENTICATION_VERIFY);

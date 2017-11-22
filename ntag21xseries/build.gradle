@@ -24,6 +24,13 @@ android {
 
 }
 
+sourceSets {
+    build {
+        java.srcDir file('src/main/java')
+
+    }
+}
+
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 

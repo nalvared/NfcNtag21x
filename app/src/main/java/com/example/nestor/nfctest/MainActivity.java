@@ -18,6 +18,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.nalvared.ntag21xseries.NTag213;
+import com.nalvared.ntag21xseries.NTag21x;
 import com.nalvared.ntag21xseries.NTagEventListener;
 
 import java.io.IOException;
@@ -41,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
 
     Button btnRead;
     Button btnWrite;
+    Button btnUid;
     Button btnSetPwd;
     Button btnDelPwd;
     Button btnAuthAndWrite;
@@ -59,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
         tvResult = findViewById(R.id.tvResult);
         btnRead = findViewById(R.id.btnRead);
         btnWrite = findViewById(R.id.btnWrite);
+        btnUid = findViewById(R.id.btnUid);
         btnSetPwd = findViewById(R.id.btnAddPwd);
         btnDelPwd = findViewById(R.id.btnDelPwd);
         btnAuthAndWrite = findViewById(R.id.btnAuthAndWrite);
@@ -72,6 +75,16 @@ public class MainActivity extends AppCompatActivity {
                 hideKeyBoard();
                 status = 0;
                 tvWait.setText("Approach the Tag to\nread it");
+                lyWait.setVisibility(View.VISIBLE);
+            }
+        });
+
+        btnUid.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideKeyBoard();
+                status = 6;
+                tvWait.setText("Approach the Tag to\nget the static ID");
                 lyWait.setVisibility(View.VISIBLE);
             }
         });
@@ -187,9 +200,29 @@ public class MainActivity extends AppCompatActivity {
                 case 5:
                     hasPwd(tag);
                     break;
+                case 6:
+                    uid(tag);
+                    break;
             }
         }
         lyWait.setVisibility(View.GONE);
+    }
+
+    private void uid(Tag tag) {
+        NTag213 nTag213 = new NTag213(tag);
+        nTag213.connect();
+        nTag213.getStaticId(NTag21x.UID_SRTING, new NTagEventListener() {
+            @Override
+            public void OnSuccess(Object response, int code) {
+                tvResult.setText((String) response);
+            }
+
+            @Override
+            public void OnError(String error, int code) {
+                Toast.makeText(getApplicationContext(), error, Toast.LENGTH_LONG).show();
+            }
+        });
+        nTag213.close();
     }
 
     private void read(Tag tag) {
