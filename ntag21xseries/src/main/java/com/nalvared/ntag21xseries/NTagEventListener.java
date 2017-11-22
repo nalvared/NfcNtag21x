@@ -23,8 +23,8 @@ public interface NTagEventListener {
      *                  <li>Cast Object to byte[]
      *                      <ul>
      *                          <li>{@link NTag21x#getStaticId(int, NTagEventListener)} with {@link NTag21x#UID_BYTES} flag</li>
-     *                          <li>{@link NTag21x#getUserMemory(NTagEventListener)}: (byte[]) response</li>
-     *                          <li>{@link NTag21x#read(NTagEventListener)}: (byte[]) response</li>
+     *                          <li>{@link NTag21x#getUserMemory(NTagEventListener)}</li>
+     *                          <li>{@link NTag21x#read(NTagEventListener)}</li>
      *                      </ul>
      *                 </li>
      *                 <li>Cast Object to String
