@@ -16,7 +16,9 @@
         android:layout_height="wrap_content"
         android:ems="10"
         android:inputType="textPersonName"
-        android:hint="Message to write"/>
+        android:hint="Message to write"
+        android:lines="5"/>
+
 
     <EditText
         android:id="@+id/edPwd"
@@ -24,8 +26,8 @@
         android:layout_height="wrap_content"
         android:ems="10"
         android:maxLength="6"
-        android:inputType="textPersonName"
-        android:hint="Password (6 characters)"/>
+        android:inputType="textPassword"
+        android:hint="Password (6 characters)" />
 
 
     <TableLayout

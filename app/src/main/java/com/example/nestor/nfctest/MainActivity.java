@@ -15,11 +15,13 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.nalvared.ntag21xseries.NTag213;
-import com.nalvared.ntag21xseries.NTag21xEventListener;
+import com.nalvared.ntag21xseries.NTagEventListener;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -163,180 +165,155 @@ public class MainActivity extends AppCompatActivity {
         if(tag != null) {
             switch (status) {
                 case 0:
-                    tvResult.setText(readFromNFC(tag));
+                    read(tag);
                     break;
                 case 1:
                     String message = edMessage.getText().toString();
-                    String r = writeToNfc(tag, message.getBytes());
-                    if (r != null)
-                        tvResult.setText(r);
-                    else
-                        tvResult.setText("Error while writing");
+                    write(tag, message);
                     break;
                 case 2:
                     String pwd = edPwd.getText().toString();
-                    r = setPwd(tag, pwd.getBytes());
-                    if (r != null)
-                    tvResult.setText(r);
-                else
-                    tvResult.setText("Error while setting password");
+                    setPwd(tag, pwd);
                     break;
                 case 3:
                     pwd = edPwd.getText().toString();
-                    r = removePwd(tag, pwd.getBytes());
-                    if (r != null)
-                        tvResult.setText(r);
-                    else
-                        tvResult.setText("Error while removing password");
+                    removePwd(tag, pwd);
                     break;
                 case 4:
                     message = edMessage.getText().toString();
                     pwd = edPwd.getText().toString();
-                    r = authAndWrite(tag, pwd.getBytes(), message.getBytes());
-                    if (r != null)
-                        tvResult.setText(r);
-                    else
-                        tvResult.setText("Error while writing");
+                    authAndWrite(tag, pwd, message);
                     break;
                 case 5:
-                    int hasPwd = hasPwd(tag);
-                    tvResult.setText(hasPwdMessage(hasPwd));
+                    hasPwd(tag);
                     break;
             }
         }
         lyWait.setVisibility(View.GONE);
     }
 
-    private String readFromNFC(Tag tag) {
+    private void read(Tag tag) {
+        NTag213 nTag213 = new NTag213(tag);
+        nTag213.connect();
+        nTag213.read(new NTagEventListener() {
+            @Override
+            public void OnSuccess(Object response, int code) {
+                byte[] r = (byte[]) response;
+                tvResult.setText(new String(r));
+            }
 
-        try {
-            NTag213 nTag213 = new NTag213(tag);
-            nTag213.connect();
-            byte[] response = nTag213.read();
-            nTag213.close();
-            return new String(response);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+            @Override
+            public void OnError(String error, int code) {
+                Toast.makeText(getApplicationContext(), error, Toast.LENGTH_LONG).show();
+            }
+        });
+        nTag213.close();
     }
 
-    private String writeToNfc(Tag tag, byte[] message){
-        try {
-            NTag213 nTag213 = new NTag213(tag, this);
-            nTag213.connect();
-            nTag213.write(message);
-            nTag213.close();
-            return "Write successful";
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+    private void write(Tag tag, String message){
+        NTag213 nTag213 = new NTag213(tag);
+        nTag213.connect();
+        nTag213.write(message.getBytes(), new NTagEventListener() {
+            @Override
+            public void OnSuccess(Object response, int code) {
+                Toast.makeText(getApplicationContext(), (String) response, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void OnError(String error, int code) {
+                Toast.makeText(getApplicationContext(), error, Toast.LENGTH_LONG).show();
+            }
+        });
+        nTag213.close();
     }
 
-    private String setPwd(Tag tag, byte[] pwd){
-        try {
-            NTag213 nTag213 = new NTag213(tag, this);
-            nTag213.connect();
-            nTag213.setPassword(
-                    new byte[]{
-                        pwd[0], pwd[1], pwd[2], pwd[3]
-                    },
-                    new byte[]{
-                        pwd[4], pwd[5], 0x00, 0x00
-                    },
-                    NTag213.FLAG_ONLY_WRITE
-            );
-            nTag213.close();
-            return "Password has been updated successful";
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+    private void setPwd(Tag tag, String password){
+        if (password.length() != 6){
+            Toast.makeText(getApplicationContext(), "Password length error", Toast.LENGTH_LONG).show();
+            return;
         }
+        byte[] pwd = Arrays.copyOfRange(password.getBytes(), 0, 4);
+        byte[] pack = Arrays.copyOfRange(password.getBytes(), 4, 6);
+
+        NTag213 nTag213 = new NTag213(tag);
+        nTag213.connect();
+        nTag213.setPassword(pwd, pack, NTag213.FLAG_ONLY_WRITE, new NTagEventListener() {
+            @Override
+            public void OnSuccess(Object response, int code) {
+                Toast.makeText(getApplicationContext(), (String) response, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void OnError(String error, int code) {
+                Toast.makeText(getApplicationContext(), error, Toast.LENGTH_LONG).show();
+            }
+        });
+        nTag213.close();
     }
 
-    private String removePwd(Tag tag, byte[] pwd){
-        try {
-            NTag213 nTag213 = new NTag213(tag, this);
-            nTag213.connect();
-            nTag213.removePassword(
-                    new byte[]{
-                            pwd[0], pwd[1], pwd[2], pwd[3]
-                    },
-                    new byte[]{
-                            pwd[4], pwd[5], 0x00, 0x00
-                    }
-            );
-            nTag213.close();
-            return "Password has been removed successful";
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+    private void removePwd(Tag tag, String password){
+
+        Log.i(TAG, password);
+        if (password.length() != 6){
+            Toast.makeText(getApplicationContext(), "Password length error", Toast.LENGTH_LONG).show();
+            return;
         }
+        byte[] pwd = Arrays.copyOfRange(password.getBytes(), 0, 4);
+        byte[] pack = Arrays.copyOfRange(password.getBytes(), 4, 6);
+
+
+        Log.i(TAG, Arrays.toString(pwd));
+        Log.i(TAG, Arrays.toString(pack));
+
+        NTag213 nTag213 = new NTag213(tag);
+        nTag213.connect();
+        nTag213.removePassword(pwd, pack, new NTagEventListener() {
+            @Override
+            public void OnSuccess(Object response, int code) {
+                Toast.makeText(getApplicationContext(), (String) response, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void OnError(String error, int code) {
+                Toast.makeText(getApplicationContext(), error, Toast.LENGTH_LONG).show();
+            }
+        });
+        nTag213.close();
     }
 
-    private String authAndWrite(Tag tag, byte[] pwd, byte[] message){
-        try {
-            NTag213 nTag213 = new NTag213(tag, this);
-            nTag213.connect();
-            nTag213.authAndWrite(
-                    new byte[]{
-                            pwd[0], pwd[1], pwd[2], pwd[3]
-                    },
-                    new byte[]{
-                            pwd[4], pwd[5], 0x00, 0x00
-                    },
-                    message
-            );
-            nTag213.close();
-            return "Write successful";
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+    private void authAndWrite(Tag tag, String password, String message){
+        byte[] pwd = Arrays.copyOfRange(password.getBytes(), 0, 4);
+        byte[] pack = Arrays.copyOfRange(password.getBytes(), 4, 6);
+        NTag213 nTag213 = new NTag213(tag);
+        nTag213.connect();
+        nTag213.authAndWrite(pwd, pack, message.getBytes(), new NTagEventListener() {
+            @Override
+            public void OnSuccess(Object response, int code) {
+                Toast.makeText(getApplicationContext(), (String) response, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void OnError(String error, int code) {
+                Toast.makeText(getApplicationContext(), error, Toast.LENGTH_LONG).show();
+            }
+        });
+        nTag213.close();
     }
 
-    private int hasPwd(Tag tag){
-        try {
-            NTag213 nTag213 = new NTag213(tag, this);
-            nTag213.connect();
-            int i = nTag213.needAuthentication();
-            nTag213.close();
-            return i;
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return -2;
-    }
+    private void hasPwd(Tag tag){
+        NTag213 nTag213 = new NTag213(tag);
+        nTag213.connect();
+        nTag213.hasPassword(new NTagEventListener() {
+            @Override
+            public void OnSuccess(Object response, int code) {
+                Toast.makeText(getApplicationContext(), (String) response, Toast.LENGTH_LONG).show();
+            }
 
-    private String hasPwdMessage(int i) {
-        switch (i) {
-            case -2:
-                return "[-2] no identifiable";
-            case -1:
-                return "[-1] the tag is not protected";
-            case 0:
-                return "[0] the tag is protected against write";
-            case 1:
-                return "[1] the tag is protected both read and write";
-            default:
-                return "[X] no identifiable";
-        }
+            @Override
+            public void OnError(String error, int code) {
+                Toast.makeText(getApplicationContext(), error, Toast.LENGTH_LONG).show();
+            }
+        });
+        nTag213.close();
     }
 }
